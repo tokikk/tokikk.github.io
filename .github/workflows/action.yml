@@ -1,0 +1,25 @@
+name: My Action
+on:
+  push:
+    branches: 
+      - master
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.6.5'
+          architecture: 'x64'
+      - name: Run Python
+        run: python convert.py
+      - name: deploy
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./api
+        publish_branch: gh-pages
