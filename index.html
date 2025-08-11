@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>今日は祝日？</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+    <script>
+      window.HOLIDAY_JSON_URL = './holidays.json';
+    </script>
+  </head>
+  <body class="bg-gray-50 text-gray-900">
+    <div id="app" class="min-h-screen flex items-center justify-center p-6">
+      <div class="w-full max-w-xl bg-white shadow-sm rounded-xl p-6">
+        <h1 class="text-2xl font-bold mb-4">今日は祝日？</h1>
+
+        <div class="space-y-2 mb-6">
+          <p class="text-sm text-gray-600">判定対象日（JST）</p>
+          <input type="date" v-model="selectedDate" class="w-full border rounded px-3 py-2" />
+          <button @click="checkHoliday" class="mt-2 inline-flex items-center px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700">判定する</button>
+        </div>
+
+        <div v-if="errorMessage" class="p-3 rounded bg-red-50 text-red-700 mb-4">{{ errorMessage }}</div>
+
+        <div v-if="loading" class="text-gray-600">読み込み中...</div>
+
+        <div v-else>
+          <div class="p-4 rounded border" :class="isHoliday ? 'border-green-300 bg-green-50' : 'border-gray-200'">
+            <p class="text-sm text-gray-600">本日（JST）: {{ todayIso }}</p>
+            <p class="text-lg mt-1">
+              <span v-if="isHoliday" class="font-semibold text-green-700">祝日: {{ holidayName }}</span>
+              <span v-else>祝日ではありません</span>
+            </p>
+          </div>
+        </div>
+
+        <p class="text-xs text-gray-500 mt-6">データ出典: 内閣府 祝日CSV</p>
+      </div>
+    </div>
+
+    <script>
+      const { createApp, ref, computed, onMounted } = Vue;
+
+      function getTodayIsoJst() {
+        const now = new Date();
+        const parts = new Intl.DateTimeFormat('ja-JP', {
+          timeZone: 'Asia/Tokyo',
+          year: 'numeric', month: '2-digit', day: '2-digit'
+        }).formatToParts(now);
+        const year = parts.find(p => p.type === 'year').value;
+        const month = parts.find(p => p.type === 'month').value;
+        const day = parts.find(p => p.type === 'day').value;
+        return `${year}-${month}-${day}`;
+      }
+
+      createApp({
+        setup() {
+          const holidays = ref({});
+          const loading = ref(true);
+          const errorMessage = ref('');
+          const todayIso = ref(getTodayIsoJst());
+          const selectedDate = ref(todayIso.value);
+
+          const holidayName = computed(() => holidays.value[todayIso.value]);
+          const isHoliday = computed(() => Boolean(holidayName.value));
+
+          async function loadHolidays() {
+            try {
+              const res = await fetch(window.HOLIDAY_JSON_URL, { cache: 'no-store' });
+              if (!res.ok) throw new Error(`データ取得に失敗しました (${res.status})`);
+              holidays.value = await res.json();
+            } catch (err) {
+              errorMessage.value = err.message || String(err);
+            } finally {
+              loading.value = false;
+            }
+          }
+
+          function checkHoliday() {
+            todayIso.value = selectedDate.value;
+          }
+
+          onMounted(loadHolidays);
+
+          return { holidays, loading, errorMessage, todayIso, selectedDate, holidayName, isHoliday, checkHoliday };
+        }
+      }).mount('#app');
+    </script>
+  </body>
+  </html>
+
+

@@ -4,7 +4,7 @@ const iconv = require('iconv-lite');
 const { parse } = require('csv-parse/sync');
 
 const SOURCE_CSV_URL = 'https://www8.cao.go.jp/chosei/shukujitsu/syukujitsu.csv';
-const OUTPUT_DIR = path.join(process.cwd(), 'docs');
+const OUTPUT_DIR = process.cwd();
 const OUTPUT_FILE = path.join(OUTPUT_DIR, 'holidays.json');
 
 function ensureDirectoryExists(directoryPath) {
